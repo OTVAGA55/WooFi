@@ -1,11 +1,11 @@
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from client import Client
+from libs.client import Client
 # from client import Client
 from tasks.woofi import WooFi
-from config import private_key
-from models import TokenAmount, Arbitrum
+from data.config import private_key
+from data.models import TokenAmount, Arbitrum
 
 import time, asyncio
 

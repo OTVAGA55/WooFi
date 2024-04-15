@@ -13,11 +13,3 @@ WOOFI_ABI = os.path.join(ABIS_DIR, 'woofi_swap.json') # simple swap
 ONEINCH_ABI = os.path.join(ABIS_DIR, '1inchV5router.json')
 WOOFI_CCS_ABI = os.path.join(ABIS_DIR, 'woofi_ccs.json') # cross chain swap
 STARGATE_ROUTER_ABI = os.path.join(ABIS_DIR, 'stargate_router.json')
-
-
-private_key = ""
-address = "0x3bE68C60287510E9aA9e980c9B86312d8dCe46Ca"
-seed = ""
-bsc_rpc = "https://bsc-mainnet.public.blastapi.io"
-polygon_rpc = "https://polygon-bor-rpc.publicnode.com"
-arb_rpc = "https://arbitrum-one-rpc.publicnode.com"

@@ -2,10 +2,10 @@ from web3 import Web3
 from typing import Optional
 import time, math, random, requests, asyncio, aiohttp
 
-from client import Client
-from utils import read_json
-from config import WOOFI_ABI, ONEINCH_ABI, WOOFI_CCS_ABI, STARGATE_ROUTER_ABI
-from models import TokenAmount, Polygon
+from libs.client import Client
+from utils.utils import read_json
+from data.config import WOOFI_ABI, ONEINCH_ABI, WOOFI_CCS_ABI, STARGATE_ROUTER_ABI
+from data.models import TokenAmount, Polygon
 
 class WooFi:
     eth_address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"

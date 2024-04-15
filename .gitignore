@@ -1,4 +1,5 @@
 __pycache__/
-tasks/__pycache__/
+*/__pycache__/
 
-wallets.txt
+data/wallets.txt
+data/proxies.txt

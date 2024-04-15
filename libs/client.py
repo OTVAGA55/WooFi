@@ -4,9 +4,9 @@ from web3.eth import AsyncEth
 from typing import Optional, Any
 import requests, asyncio, aiohttp, time, random
 
-from models import TokenAmount, Network
-from utils import read_json
-from config import TOKEN_ABI
+from data.models import TokenAmount, Network
+from utils.utils import read_json
+from data.config import TOKEN_ABI
 
 class Client:
     default_abi = read_json(TOKEN_ABI)
