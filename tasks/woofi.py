@@ -3,7 +3,7 @@ from typing import Optional
 import time, math, random, requests, asyncio, aiohttp
 
 from libs.client import Client
-from utils.utils import read_json
+from libs.utils import read_json
 from data.config import WOOFI_ABI, ONEINCH_ABI, WOOFI_CCS_ABI, STARGATE_ROUTER_ABI
 from data.models import TokenAmount, Polygon
 
@@ -42,10 +42,10 @@ class WooFi:
 
         )
 
-    async def get_eth_price(self):
-        return await asyncio.gather(
-            asyncio.create_task(self.client.get_eth_price(token='ETH'))
-        )
+    # async def get_eth_price(self):
+    #     return await asyncio.gather(
+    #         asyncio.create_task(self.client.get_eth_price(token='ETH'))
+    #     )
 
     async def swap_eth_to_usdc(self, amount: TokenAmount, slippage: float = 1):
         woofi_contract = self.client.w3.eth.contract(
@@ -54,7 +54,7 @@ class WooFi:
         )
 
         min_to_amount = TokenAmount(
-            amount=(await self.get_eth_price())[0] * float(amount.Ether) * (1 - slippage / 100),
+            amount=(await self.client.get_eth_price()) * float(amount.Ether) * (1 - slippage / 100),
             decimals=6,
             wei=False
         )
@@ -106,7 +106,7 @@ class WooFi:
         )
 
         min_to_amount = TokenAmount(
-            amount=float(amount.Ether) / (await self.get_eth_price())[0] * (1 - slippage / 100)
+            amount=float(amount.Ether) / (await self.client.get_eth_price()) * (1 - slippage / 100)
         )
 
         oneinch_data = self.oneinch_data(
@@ -151,7 +151,7 @@ class WooFi:
         )
 
         min_bridge_amount = TokenAmount(
-            amount=(await self.get_eth_price())[0] * float(amount.Ether) * (1 - slippage / 100),
+            amount=(await self.client.get_eth_price()) * float(amount.Ether) * (1 - slippage / 100),
             decimals=6,
             wei=False
         )
@@ -226,7 +226,7 @@ class WooFi:
         )
 
         min_to_amount = TokenAmount(
-            amount=(await self.get_eth_price())[0] * float(amount.Ether) * (1 - slippage / 100),
+            amount=(await self.client.get_eth_price()) * float(amount.Ether) * (1 - slippage / 100),
             decimals=6,
             wei=False
         )

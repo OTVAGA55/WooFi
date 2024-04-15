@@ -1,11 +1,11 @@
-from web3 import Web3, AsyncWeb3
+from web3 import Web3, AsyncWeb3, Account
 from web3.middleware import geth_poa_middleware
 from web3.eth import AsyncEth
 from typing import Optional, Any
 import requests, asyncio, aiohttp, time, random
 
 from data.models import TokenAmount, Network
-from utils.utils import read_json
+from libs.utils import read_json, async_get
 from data.config import TOKEN_ABI
 
 class Client:
@@ -13,10 +13,11 @@ class Client:
 
     def __init__(
         self,
-        private_key: str,
+        wallet: Account,
         network: Network
     ):
-        self.private_key = private_key
+        self.wallet = wallet
+        self.private_key = self.wallet._private_key
         self.network = network
         self.w3 = Web3(
             provider=Web3.AsyncHTTPProvider(
@@ -27,7 +28,7 @@ class Client:
             },
             middlewares=[]
         )
-        self.address = Web3.to_checksum_address(self.w3.eth.account.from_key(private_key=private_key).address)
+        self.address = Web3.to_checksum_address(wallet.address)
 
     # decimals of contract
     async def get_decimals(self, contract_address: str) -> int:
@@ -170,7 +171,7 @@ class Client:
                 2. Ошибка в data
                 3. Мало газа
         """
-        sign = self.w3.eth.account.sign_transaction(tx_params, self.private_key)
+        sign = self.wallet.sign_transaction(tx_params, self.private_key)
         return await self.w3.eth.send_raw_transaction(sign.rawTransaction)
    
     async def verif_tx(self, tx_hash):
@@ -230,33 +231,16 @@ class Client:
     
     async def get_eth_price(self, token='ETH'):
         token = token.upper()
+        binance_api_url = f'https://api.binance.com/api/v3/depth?limit=1&symbol={token}USDT'
+        
         print(f"{self.address} | [START] Getting {token} price...")
         
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f'https://api.binance.com/api/v3/depth?limit=1&symbol={token}USDT') as resp:
-                if resp.status != 200:
-                    print(f"\tcode: {resp.status} |\t| json: {await resp.json()}")
-                    return False
-                result_json = await resp.json()
+        response = await async_get(url=binance_api_url)
                 
-                if 'asks' not in result_json:
-                    print(f"\tcode: {resp.status} | asks not in response | json: {resp.json()}")
-                    return False
-                
-                print(f"{self.address} | [END] {token} price received!")
-                
-                return float(result_json['asks'][0][0])
-
-
-        # response = requests.get(f'https://api.binance.com/api/v3/depth?limit=1&symbol={token}USDT')
-        # if response.status_code != 200:
-        #     print(f"\tcode: {response.status_code} |\t| json: {response.json()}")
-        #     return False
-        # result_dict = response.json()
+        if 'asks' not in response:
+            print(f"\tcode: {response.status} | asks not in response | json: {response}")
+            return False
         
-        # if 'asks' not in result_dict:
-        #     print(f"\tcode: {response.status_code} | asks not in response | json: {response.json()}")
-        #     return False
+        print(f"{self.address} | [END] {token} price received!")
         
-        # print(f"{self.address} | [END] {token} price received!")
-        # return float(result_dict['asks'][0][0])
+        return float(response['asks'][0][0])
