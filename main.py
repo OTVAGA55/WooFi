@@ -20,8 +20,20 @@ async def main():
     client = Client(wallet=wallets[0], network=Arbitrum)
 
     woofi = WooFi(client=client)
+    amount = TokenAmount(0.0001)
 
-    
+    tasks = []
+    for _ in range(4):
+        tasks.append(asyncio.create_task(woofi.swap_eth_to_usdc(amount=amount)))
+
+    # return await asyncio.gather(*tasks)
+    delay = 4
+    for completed_task in asyncio.as_completed(tasks):
+        try:
+            await completed_task
+        except ValueError as err:
+            print(f"Exception cathed: {err}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

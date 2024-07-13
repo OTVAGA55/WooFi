@@ -171,7 +171,11 @@ class Client:
                 2. Ошибка в data
                 3. Мало газа
         """
-        sign = self.wallet.sign_transaction(tx_params, self.private_key)
+                
+        if (await self.w3.eth.get_transaction_count(self.address)) > nonce:
+            tx_params['nonce'] = await self.w3.eth.get_transaction_count(self.address)
+
+        sign = self.wallet.sign_transaction(tx_params)
         return await self.w3.eth.send_raw_transaction(sign.rawTransaction)
    
     async def verif_tx(self, tx_hash):
@@ -181,7 +185,7 @@ class Client:
                 print(f"{self.address} | Transaction was successful: {tx_hash.hex()}")
                 return True
             else:
-                print(f"{self.address} | Transaction failed {data["transactionHash"].hex()}")
+                print(f"{self.address} | Transaction failed {data['transactionHash'].hex()}")
                 return False
         except Exception as err:
             print(f"{self.address} | Unexpected error in <verif_tx> func: {err}")
@@ -225,7 +229,6 @@ class Client:
             print(f"{self.address} | [END] Approve ERROR | {token_address} for spender {spender}")
             return False
         else:
-            print(f"{self.address} | [END] Approved! | {token_address} for spender {spender}")
             return True
         
     
