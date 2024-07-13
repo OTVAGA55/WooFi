@@ -14,20 +14,25 @@ async def load_wallets():
     async with aiofiles.open("./data/wallets.txt", 'r') as file:
         return [Account.from_key(line.replace("\n", "")) for line in (await file.readlines())]
 
+async def swap(woofi, amount):
+    delay = 10
+    await woofi.swap_eth_to_usdc(amount=amount)
+    # await asyncio.sleep(delay)
+
 async def main():
     wallets = await load_wallets()
-
-    client = Client(wallet=wallets[0], network=Arbitrum)
-
-    woofi = WooFi(client=client)
-    amount = TokenAmount(0.0001)
+    amount_eth = TokenAmount(0.0001)
 
     tasks = []
-    for _ in range(4):
-        tasks.append(asyncio.create_task(woofi.swap_eth_to_usdc(amount=amount)))
+    for wallet in wallets:
+        client = Client(wallet=wallet, network=Arbitrum)
+        woofi = WooFi(client=client)
+        tasks.append(asyncio.create_task(swap(woofi=woofi, amount=amount_eth)))
+
+    # tasks = []
+    # tasks.append(asyncio.create_task(woofi.eth_cross_chain_swap(amount=amount_eth)))
 
     # return await asyncio.gather(*tasks)
-    delay = 4
     for completed_task in asyncio.as_completed(tasks):
         try:
             await completed_task

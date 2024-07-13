@@ -205,13 +205,13 @@ class Client:
         )
     
     async def approve_interface(self, token_address: str, spender: str, amount: Optional[TokenAmount] = None) -> bool:
-        print(f"{self.address} | [START] Approve {token_address} for spender {spender}")
+        print(f"{self.address} | Approving {token_address} for spender {spender}...")
         
         decimals = await self.get_decimals(contract_address=token_address)
         balance = await self.balance_of(contract_address=token_address)
 
         if balance.Wei <= 0:
-            print(f"{self.address} | [END] Approve | balance = 0")
+            print(f"{self.address} | Approve | balance = 0")
             return False
         
         if not amount or amount.Wei > balance.Wei:
@@ -220,15 +220,16 @@ class Client:
         approved = await self.get_allowance(token_address=token_address, spender=spender)
 
         if amount.Wei <= approved.Wei:
-            print(f"{self.address} | [END] Approve | already approved")
+            print(f"{self.address} | Approve | already approved")
             return True
         
         tx_hash = await self.approve(token_address=token_address, spender=spender, amount=amount)
         
         if not (await self.verif_tx(tx_hash=tx_hash)):
-            print(f"{self.address} | [END] Approve ERROR | {token_address} for spender {spender}")
+            print(f"{self.address} | Approve ERROR | {token_address} for spender {spender}")
             return False
         else:
+            print(f"{self.address} | Approved {token_address} for spender {spender}!")
             return True
         
     
@@ -236,14 +237,10 @@ class Client:
         token = token.upper()
         binance_api_url = f'https://api.binance.com/api/v3/depth?limit=1&symbol={token}USDT'
         
-        print(f"{self.address} | [START] Getting {token} price...")
-        
         response = await async_get(url=binance_api_url)
                 
         if 'asks' not in response:
             print(f"\tcode: {response.status} | asks not in response | json: {response}")
             return False
-        
-        print(f"{self.address} | [END] {token} price received!")
         
         return float(response['asks'][0][0])
