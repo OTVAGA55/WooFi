@@ -1,5 +1,5 @@
 ## Asynchronous automation WooFi protocol in Arbitrum network
-_____________________________________________
+
 This script will help you, if you need to transfer or stake tokens in multiple wallets very fast.
 It only works in Arbitrum network for now.
 
