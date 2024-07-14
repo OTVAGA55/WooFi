@@ -287,7 +287,7 @@ class WooFi:
 
     async def stake_woo(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
         if not amount:
-            amount = await self.client.balance_of(contract_address=WooFi.usdc_address)
+            amount = await self.client.balance_of(contract_address=WooFi.woo_address)
 
         res = await self.client.approve_interface(
             token_address=WooFi.woo_address,
@@ -296,8 +296,6 @@ class WooFi:
         )
         if not res:
             return False
-
-        await asyncio.sleep(2)
 
         contract = self.client.w3.eth.contract(
             address=WooFi.stake_address,
@@ -309,6 +307,36 @@ class WooFi:
             to=WooFi.stake_address,
             data=contract.encodeABI(
                 'stake',
+                args=(
+                    amount.Wei,
+                )
+            )
+        )
+        receipt = await self.client.verif_tx(tx_hash=tx)
+        return receipt
+
+    async def unstake_woo(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
+        if not amount:
+            amount = await self.client.balance_of(contract_address=WooFi.woo_address)
+
+        res = await self.client.approve_interface(
+            token_address=WooFi.woo_address,
+            spender=WooFi.stake_address,
+            amount=amount
+        )
+        if not res:
+            return False
+
+        contract = self.client.w3.eth.contract(
+            address=WooFi.stake_address,
+            abi=WooFi.stake_abi
+        )
+
+        print(f"{self.client.address} | Unstaking WOO...")
+        tx = await self.client.send_transaction(
+            to=WooFi.stake_address,
+            data=contract.encodeABI(
+                'unstake',
                 args=(
                     amount.Wei,
                 )

@@ -229,7 +229,6 @@ class Client:
             print(f"{self.address} | Approve ERROR | {token_address} for spender {spender}")
             return False
         else:
-            print(f"{self.address} | Approved {token_address} for spender {spender}!")
             return True
         
     
