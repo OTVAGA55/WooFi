@@ -16,18 +16,25 @@ async def load_wallets():
 
 async def swap(woofi, amount):
     delay = 10
-    await woofi.swap_eth_to_usdc(amount=amount)
+    await woofi.swap_eth_to_woo(amount=amount)
     # await asyncio.sleep(delay)
+
+async def stake(woofi, amount):
+    pass
 
 async def main():
     wallets = await load_wallets()
     amount_eth = TokenAmount(0.0001)
 
     tasks = []
-    for wallet in wallets:
-        client = Client(wallet=wallet, network=Arbitrum)
-        woofi = WooFi(client=client)
-        tasks.append(asyncio.create_task(swap(woofi=woofi, amount=amount_eth)))
+    # for wallet in wallets:
+    #     client = Client(wallet=wallet, network=Arbitrum)
+    #     woofi = WooFi(client=client)
+    #     tasks.append(asyncio.create_task(swap(woofi=woofi, amount=amount_eth)))
+
+    client = Client(wallet=wallets[1], network=Arbitrum)
+    woofi = WooFi(client=client)
+    tasks.append(asyncio.create_task(swap(woofi=woofi, amount=amount_eth)))
 
     # tasks = []
     # tasks.append(asyncio.create_task(woofi.eth_cross_chain_swap(amount=amount_eth)))

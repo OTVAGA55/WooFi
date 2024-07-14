@@ -4,13 +4,14 @@ import time, math, random, requests, asyncio, aiohttp
 
 from libs.client import Client
 from libs.utils import read_json
-from data.config import WOOFI_ABI, ONEINCH_ABI, WOOFI_CCS_ABI, STARGATE_ROUTER_ABI
-from data.models import TokenAmount, Polygon
+from data.config import WOOFI_ABI, ONEINCH_ABI, WOOFI_CCS_ABI, STARGATE_ROUTER_ABI, WOOFI_STAKE
+from data.models import TokenAmount, Polygon, Arbitrum
 
 class WooFi:
     eth_address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
     usdc_address = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
     usdc_bridged_address = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
+    woo_address = "0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b"
 
     oneinch_router = "0x1111111254EEB25477B68fb85Ed929f73A960582"
     stargate_router = "0x53Bf833A5d6c4ddA888F69c22C88C9f356a41614"
@@ -20,7 +21,9 @@ class WooFi:
 
     cross_chain_abi = read_json(WOOFI_CCS_ABI)
     cross_chain_router = Web3.to_checksum_address("0xCa10E8825FA9F1dB0651Cd48A9097997DBf7615d")
-    
+
+    stake_abi = read_json(WOOFI_STAKE)
+    stake_address = Web3.to_checksum_address("0x2CFa72E7f58dc82B990529450Ffa83791db7d8e2")
     
     def __init__(self, client: Client):
         self.client = client
@@ -46,6 +49,29 @@ class WooFi:
     #     return await asyncio.gather(
     #         asyncio.create_task(self.client.get_eth_price(token='ETH'))
     #     )
+
+    async def get_oneinch_swap_data(
+        self,
+        network: str,
+        from_token: str,
+        to_token: str,
+        from_amount: str,
+        from_address: str,
+        slippage: float
+    ):
+        url = f"https://fi-api.woo.org/v1/1inch_swap?network={network.name}&from_token={Web3.to_checksum_address(from_token)}&to_token={Web3.to_checksum_address(to_token)}&from_amount={from_amount.Wei}&from_address={Web3.to_checksum_address(from_address)}&slippage={slippage}"
+        
+        print(f"{self.client.address} | Receiving tx_info from fi-api.woo.org...")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    print(f"{self.client.address} | Received tx_info from fi-api.woo.org!")
+                    tx_info = await resp.json()
+                    return tx_info
+                else:
+                    print(f"{self.client.address} | [ERROR] Receiving tx_info from fi-api.woo.org...")
+                    return False
+                    
 
     async def swap_eth_to_usdc(self, amount: TokenAmount, slippage: float = 1):
         woofi_contract = self.client.w3.eth.contract(
@@ -223,19 +249,19 @@ class WooFi:
             address=WooFi.router_address,
             abi=WooFi.router_abi
         )
-
-        min_to_amount = TokenAmount(
-            amount=(await self.client.get_eth_price()) * float(amount.Ether) * (1 - slippage / 100),
-            decimals=6,
-            wei=False
+        swap_data = await self.get_oneinch_swap_data(
+            network=Arbitrum,
+            from_token=WooFi.eth_address,
+            to_token=WooFi.woo_address,
+            from_amount=amount,
+            from_address=WooFi.router_address,
+            slippage=slippage
         )
 
-        oneinch_data = self.oneinch_data(
-            decoded_pool=28948022309329048855892746252806944035729668322079832629733701779868696598879,
-            amount=amount,
-            min_to_amount=min_to_amount
-        )
-        await asyncio.sleep(random.random() * 5)
+        min_to_amount = int(swap_data['toAmount'])
+
+        oneinch_data = swap_data['tx']['data']
+        
         tx = await self.client.send_transaction(
             to=WooFi.router_address,
             data=woofi_contract.encodeABI(
@@ -244,18 +270,51 @@ class WooFi:
                     WooFi.oneinch_router,
                     WooFi.oneinch_router,
                     WooFi.eth_address,
-                    WooFi.usdc_address,
+                    WooFi.woo_address,
                     amount.Wei,
-                    min_to_amount.Wei,
+                    min_to_amount,
                     self.client.address,
-                    oneinch_data + "31eb0e2e",
+                    oneinch_data,
                 )
             ),
             value=amount.Wei
         )
         receipt = await self.client.verif_tx(tx_hash=tx)
 
+        await asyncio.sleep(random.random() * 5)
+
         return receipt
 
-    async def stake_woo(self, amount: TokenAmount, slippage: float = 1):
-        pass
+    async def stake_woo(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
+        
+        if not amount:
+            amount = await self.client.balance_of(contract_address=WooFi.usdc_address)
+
+        res = await self.client.approve_interface(
+            token_address=WooFi.woo_address,
+            spender=WooFi.stake_address,
+            amount=amount
+        )
+        if not res:
+            return False
+
+        await asyncio.sleep(2)
+
+        contract = self.client.w3.eth.contract(
+            address=WooFi.stake_address,
+            abi=WooFi.stake_abi
+        )
+
+        print(f"{self.client.address} | Staking WOO...")
+        tx = await self.client.send_transaction(
+            to=WooFi.stake_address,
+            data=contract.encodeABI(
+                'stake',
+                args=(
+                    amount.Wei
+                )
+            )
+        )
+        receipt = await self.client.verif_tx(tx_hash=tx)
+
+        return receipt

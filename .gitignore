@@ -3,3 +3,4 @@ __pycache__/
 
 data/wallets.txt
 data/proxies.txt
+test.py

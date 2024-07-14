@@ -13,3 +13,4 @@ WOOFI_ABI = os.path.join(ABIS_DIR, 'woofi_swap.json') # simple swap
 ONEINCH_ABI = os.path.join(ABIS_DIR, '1inchV5router.json')
 WOOFI_CCS_ABI = os.path.join(ABIS_DIR, 'woofi_ccs.json') # cross chain swap
 STARGATE_ROUTER_ABI = os.path.join(ABIS_DIR, 'stargate_router.json')
+WOOFI_STAKE = os.path.join(ABIS_DIR, 'woofi_stake.json')
