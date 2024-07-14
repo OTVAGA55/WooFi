@@ -3,7 +3,7 @@ from typing import Optional
 import time, math, random, requests, asyncio, aiohttp
 
 from libs.client import Client
-from libs.utils import read_json
+from libs.utils import read_json, async_get
 from data.config import WOOFI_ABI, ONEINCH_ABI, WOOFI_CCS_ABI, STARGATE_ROUTER_ABI, WOOFI_STAKE
 from data.models import TokenAmount, Polygon, Arbitrum
 
@@ -50,6 +50,7 @@ class WooFi:
     #         asyncio.create_task(self.client.get_eth_price(token='ETH'))
     #     )
 
+    # Getting bytes data for externalSwap
     async def get_oneinch_swap_data(
         self,
         network: str,
@@ -62,17 +63,10 @@ class WooFi:
         url = f"https://fi-api.woo.org/v1/1inch_swap?network={network.name}&from_token={Web3.to_checksum_address(from_token)}&to_token={Web3.to_checksum_address(to_token)}&from_amount={from_amount.Wei}&from_address={Web3.to_checksum_address(from_address)}&slippage={slippage}"
         
         print(f"{self.client.address} | Receiving tx_info from fi-api.woo.org...")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status == 200:
-                    print(f"{self.client.address} | Received tx_info from fi-api.woo.org!")
-                    tx_info = await resp.json()
-                    return tx_info
-                else:
-                    print(f"{self.client.address} | [ERROR] Receiving tx_info from fi-api.woo.org...")
-                    return False
-                    
+        tx_info = await async_get(url)
+        return tx_info
 
+    # Swap ETH to USDC in Arbitrum
     async def swap_eth_to_usdc(self, amount: TokenAmount, slippage: float = 1):
         woofi_contract = self.client.w3.eth.contract(
             address=WooFi.router_address,
@@ -111,7 +105,8 @@ class WooFi:
         receipt = await self.client.verif_tx(tx_hash=tx)
 
         return receipt
-   
+
+    # Swap USDC to ETH in Arbitrum
     async def swap_usdc_to_eth(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
         if not amount:
             amount = await self.client.balance_of(contract_address=WooFi.usdc_address)
@@ -161,14 +156,18 @@ class WooFi:
 
         return receipt
 
+    # Swap ETH from Arbitrum to Polygon
     async def eth_cross_chain_swap(self, amount: TokenAmount, slippage: float = 1):
         print(f"{self.client.address} | [START] Requesting tx_info from fi-api.woo.org...")
+        
+        url = f"https://fi-api.woo.org/v3/cross_chain_swap?src_network=arbitrum&dst_network=polygon&src_token=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&dst_token=0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619&src_amount={amount.Wei}&slippage=1&extra_fee_rate=0"
+        tx_info = await async_get(url)
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://fi-api.woo.org/v3/cross_chain_swap?src_network=arbitrum&dst_network=polygon&src_token=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&dst_token=0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619&src_amount={amount.Wei}&slippage=1&extra_fee_rate=0") as resp:
-                if resp.status == 200:
-                    print(f"{self.client.address} | [END] TX_Info was received!")
-                tx_info = await resp.json()
+        # async with aiohttp.ClientSession() as session:
+        #     async with session.get(f"https://fi-api.woo.org/v3/cross_chain_swap?src_network=arbitrum&dst_network=polygon&src_token=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&dst_token=0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619&src_amount={amount.Wei}&slippage=1&extra_fee_rate=0") as resp:
+        #         if resp.status == 200:
+        #             print(f"{self.client.address} | [END] TX_Info was received!")
+        #         tx_info = await resp.json()
 
         contract = self.client.w3.eth.contract(
             address=WooFi.cross_chain_router,
@@ -244,6 +243,7 @@ class WooFi:
 
         return receipt
 
+    # Swap ETH to WOO in Arbitrum
     async def swap_eth_to_woo(self, amount: TokenAmount, slippage: float = 1):
         woofi_contract = self.client.w3.eth.contract(
             address=WooFi.router_address,
@@ -285,6 +285,7 @@ class WooFi:
 
         return receipt
 
+    # Staking WOO
     async def stake_woo(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
         if not amount:
             amount = await self.client.balance_of(contract_address=WooFi.woo_address)
@@ -315,6 +316,7 @@ class WooFi:
         receipt = await self.client.verif_tx(tx_hash=tx)
         return receipt
 
+    # Unstaking WOO
     async def unstake_woo(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
         if not amount:
             amount = await self.client.balance_of(contract_address=WooFi.woo_address)
