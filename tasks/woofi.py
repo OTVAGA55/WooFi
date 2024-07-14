@@ -286,7 +286,6 @@ class WooFi:
         return receipt
 
     async def stake_woo(self, amount: Optional[TokenAmount] = None, slippage: float = 1):
-        
         if not amount:
             amount = await self.client.balance_of(contract_address=WooFi.usdc_address)
 
@@ -311,10 +310,9 @@ class WooFi:
             data=contract.encodeABI(
                 'stake',
                 args=(
-                    amount.Wei
+                    amount.Wei,
                 )
             )
         )
         receipt = await self.client.verif_tx(tx_hash=tx)
-
         return receipt
