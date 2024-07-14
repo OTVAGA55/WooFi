@@ -26,17 +26,17 @@ async def unstake(woofi, amount):
 async def main():
     wallets = await load_wallets()
     amount_eth = TokenAmount(0.0001)
-    amount_woo = TokenAmount(0.2)
+    amount_woo = TokenAmount(0.1)
 
     tasks = []
-    # for wallet in wallets:
-    #     client = Client(wallet=wallet, network=Arbitrum)
-    #     woofi = WooFi(client=client)
-    #     tasks.append(asyncio.create_task(swap(woofi=woofi, amount=amount_eth)))
+    for wallet in wallets:
+        client = Client(wallet=wallet, network=Arbitrum)
+        woofi = WooFi(client=client)
+        tasks.append(asyncio.create_task(swap(woofi=woofi, amount=amount_eth)))
 
-    client = Client(wallet=wallets[1], network=Arbitrum)
-    woofi = WooFi(client=client)
-    tasks.append(asyncio.create_task(unstake(woofi=woofi, amount=amount_woo)))
+    # client = Client(wallet=wallets[1], network=Arbitrum)
+    # woofi = WooFi(client=client)
+    # tasks.append(asyncio.create_task(stake(woofi=woofi, amount=amount_woo)))
 
     for completed_task in asyncio.as_completed(tasks):
         try:
